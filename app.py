@@ -57,7 +57,7 @@ if st.button("Analyze 📊"):
 
     elif coin_name and timeframe:
         st.subheader(f"Fetching data for {coin_name} on {timeframe}")
-        url = f"https://fapi.binance.com/fapi/v1/klines?symbol={coin_name}&interval={timeframe}&limit=100"
+        url = f"https://api.binance.me/api/v3/klines?symbol={coin_name}&interval={timeframe}&limit=100"
         try:
             response = requests.get(url)
             response.raise_for_status()  # HTTP errors check karein
