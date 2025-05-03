@@ -8,7 +8,7 @@ import pandas as pd
 import ta
 from streamlit.errors import StreamlitAPIException
 
-# 𝗔𝗣𝗜 𝗞𝗲𝘆 𝗛𝗮𝗿𝗱𝗰𝗼𝗱𝗲𝗱 𝗞𝗮𝗿𝗲𝗶n
+# 𝗔𝗣𝗜 𝗞𝗲𝘆 𝗛𝗮𝗿𝗱𝗰𝗼𝗱𝗲𝗱 𝗞𝗮𝗿𝗲𝗶𝗻 (Replace YOUR_KEY_HERE with actual key)
 # 𝗪𝗔𝗥𝗡𝗜𝗡𝗚: Is key ko kabhi public nahi karna!
 openai.api_key = "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"  # 👈 Replace this
 
@@ -53,13 +53,50 @@ if st.button("Analyze 📊"):
         st.subheader("Main Conclusion:")
         st.write(analysis.split("## Conclusion:")[-1].strip() if "## Conclusion:" in analysis else "Conclusion missing.")
     
+    # ... (previous imports and OpenAI setup) ...
+
     elif coin_name and timeframe:
         st.subheader(f"Fetching data for {coin_name} on {timeframe}")
         url = f"https://fapi.binance.com/fapi/v1/klines?symbol={coin_name}&interval={timeframe}&limit=100"
-        data = requests.get(url).json()
-        df = pd.DataFrame(data, columns=["open_time","open","high","low","close","volume","close_time",
-                                          "qav","num_trades","taker_base_vol","taker_quote_vol","ignore"])
-        df = df.astype({"open":"float","high":"float","low":"float","close":"float","volume":"float","qav":"float"})
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # HTTP errors check karein
+            data = response.json()
+            
+            # DataFrame banane se pehle data check karein
+            if not data:
+                st.error("Binance se koi data nahi mila! Symbol ya timeframe sahi hai?")
+                st.stop()
+                
+            df = pd.DataFrame(data, columns=["open_time","open","high","low","close","volume","close_time",
+                                            "qav","num_trades","taker_base_vol","taker_quote_vol","ignore"])
+            df = df.astype({"open":"float","high":"float","low":"float","close":"float","volume":"float","qav":"float"})
+            
+            # SAR Indicator ko safe tarike se handle karein
+            try:
+                # High, Low, Close columns ka index 0 check karein
+                if df['high'].empty or df['low'].empty or df['close'].empty:
+                    raise ValueError("DataFrame mein columns khali hain")
+                    
+                # PSARIndicator ko calculate karein
+                psar = ta.trend.PSARIndicator(
+                    high=df['high'],
+                    low=df['low'],
+                    close=df['close'],
+                    step=0.02,  # Default parameters specify karein
+                    max_step=0.2
+                )
+                df['SAR'] = psar.psar()
+                
+            except Exception as e:
+                st.error(f"SAR calculate nahi ho saka: {str(e)}")
+                df['SAR'] = 0  # Default value assign karein
+                
+            # Baqi indicators (same as before) ...
+            
+        except requests.exceptions.RequestException as e:
+            st.error(f"Binance API error: {str(e)}")
+            st.stop()
         # Indicators (same as before)
         df['MA']  = df['close'].rolling(window=20).mean()
         df['EMA'] = ta.trend.EMAIndicator(df['close'], window=20).ema_indicator()
