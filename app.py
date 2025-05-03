@@ -8,6 +8,11 @@ import pandas as pd
 import ta
 from streamlit.errors import StreamlitAPIException
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+}
+response = requests.get(url, headers=headers)
+
 # 𝗔𝗣𝗜 𝗞𝗲𝘆 𝗛𝗮𝗿𝗱𝗰𝗼𝗱𝗲𝗱 𝗞𝗮𝗿𝗲𝗶𝗻 (Replace YOUR_KEY_HERE with actual key)
 # 𝗪𝗔𝗥𝗡𝗜𝗡𝗚: Is key ko kabhi public nahi karna!
 openai.api_key = "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"  # 👈 Replace this
