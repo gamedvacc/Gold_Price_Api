@@ -8,7 +8,6 @@ import pandas as pd
 import ta
 from streamlit.errors import StreamlitAPIException
 
-
 # 𝗔𝗣𝗜 𝗞𝗲𝘆 𝗛𝗮𝗿𝗱𝗰𝗼𝗱𝗲𝗱 𝗞𝗮𝗿𝗲𝗶𝗻 (Replace YOUR_KEY_HERE with actual key)
 # 𝗪𝗔𝗥𝗡𝗜𝗡𝗚: Is key ko kabhi public nahi karna!
 openai.api_key = "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"  # 👈 Replace this
@@ -58,42 +57,55 @@ if st.button("Analyze 📊"):
 
     elif coin_name and timeframe:
         st.subheader(f"Fetching data for {coin_name} on {timeframe}")
+        
+        # ✅ Sahi Spot API URL with CDN
         url = f"https://api.binance.me/api/v3/klines?symbol={coin_name}&interval={timeframe}&limit=100"
+        
+        # Proxy ya CDN test karein
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9"
+        }
+        
         try:
-            response = requests.get(url)
-            response.raise_for_status()  # HTTP errors check karein
+            # 3 baar retry ka mechanism
+            max_retries = 3
+            for attempt in range(max_retries):
+                response = requests.get(url, headers=headers, timeout=10)
+                if response.status_code == 200:
+                    break
+                elif response.status_code == 451:
+                    st.warning(f"Retry {attempt+1}/3: Regional block detected...")
+                    time.sleep(2)
+            
+            response.raise_for_status()
             data = response.json()
             
-            # DataFrame banane se pehle data check karein
-            if not data:
-                st.error("Binance se koi data nahi mila! Symbol ya timeframe sahi hai?")
+            # Data validation check
+            if not data or 'code' in data:
+                st.error(f"Binance ne error diya: {data.get('msg', 'Unknown error')}")
                 st.stop()
                 
+            # DataFrame banayein
             df = pd.DataFrame(data, columns=["open_time","open","high","low","close","volume","close_time",
                                             "qav","num_trades","taker_base_vol","taker_quote_vol","ignore"])
             df = df.astype({"open":"float","high":"float","low":"float","close":"float","volume":"float","qav":"float"})
             
-            # SAR Indicator ko safe tarike se handle karein
+            # SAR Indicator ko safe tarike se handle
             try:
-                # High, Low, Close columns ka index 0 check karein
-                if df['high'].empty or df['low'].empty or df['close'].empty:
-                    raise ValueError("DataFrame mein columns khali hain")
-                    
-                # PSARIndicator ko calculate karein
                 psar = ta.trend.PSARIndicator(
                     high=df['high'],
                     low=df['low'],
                     close=df['close'],
-                    step=0.02,  # Default parameters specify karein
+                    step=0.02,
                     max_step=0.2
                 )
                 df['SAR'] = psar.psar()
-                
             except Exception as e:
-                st.error(f"SAR calculate nahi ho saka: {str(e)}")
-                df['SAR'] = 0  # Default value assign karein
-                
-            # Baqi indicators (same as before) ...
+                st.warning(f"SAR calculate nahi hua: {str(e)}")
+                df['SAR'] = 0
+                    
+                # Baqi indicators (same as before) ...
             
         except requests.exceptions.RequestException as e:
             st.error(f"Binance API error: {str(e)}")
