@@ -7,6 +7,19 @@ import requests
 import pandas as pd
 import ta
 from streamlit.errors import StreamlitAPIException
+import random
+
+PROXY_LIST = [
+    "http://45.61.139.48:7979",
+    "http://152.206.85.87:3128",
+    "http://103.155.54.26:83"
+]
+
+def get_random_proxy():
+    return {"http": random.choice(PROXY_LIST), "https": random.choice(PROXY_LIST)}
+
+# Usage:
+response = requests.get(url, headers=headers, proxies=get_random_proxy())
 
 # 𝗔𝗣𝗜 𝗞𝗲𝘆 𝗛𝗮𝗿𝗱𝗰𝗼𝗱𝗲𝗱 𝗞𝗮𝗿𝗲𝗶𝗻 (Replace YOUR_KEY_HERE with actual key)
 # 𝗪𝗔𝗥𝗡𝗜𝗡𝗚: Is key ko kabhi public nahi karna!
