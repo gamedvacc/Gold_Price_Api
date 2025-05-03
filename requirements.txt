@@ -1,2 +1,8 @@
-Flask==2.3.3
+openai>=1.0
+streamlit
+pandas
+numpy
+Pillow
+ta
 requests
+python-binance
